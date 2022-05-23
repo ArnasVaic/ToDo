@@ -1,19 +1,16 @@
-using ToDo2.Dependencies;
+using ToDo.Dependencies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<PostDependency>();
+builder.Services.AddSingleton<IToDoRepository, ToDoRepository>();
 
 var app = builder.Build();
-
-//app.AddSingleton<, >();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
