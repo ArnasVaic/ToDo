@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ToDo.Dependencies;
 using ToDo.Models;
 
-namespace ToDo2.Controllers
+namespace ToDo.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -43,49 +43,32 @@ namespace ToDo2.Controllers
         /// <param name="deadline">task deadline</param>
         /// <param name="description">task description</param>
         /// <returns>To Do item</returns>
+
+        /// <summary>
+        /// Add a new To Do
+        /// </summary>
+        /// <param name="post">post to add</param>
+        /// <returns>To Do item</returns>
         [HttpPost]
-        public IActionResult Post([FromBody] string title, [FromBody] DateTime deadline, [FromBody] String description)
+        public IActionResult Post([FromBody] ToDoPostModel post)
         {
-            // TODO: model validation
-            if (string.IsNullOrEmpty(title))
+            if (post.Deadline.CompareTo(DateTime.UtcNow) < 0)
             {
-                const string msg = "Title parameter pass as null";
+                string msg = $"POST /ToDo post with data: {post} cannot be created because deadline has already passed";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
 
-            if (string.IsNullOrEmpty(description))
+            if (_toDoRepository.Exists(post.Title))
             {
-                const string msg = "Description parameter pass as null";
+                string msg = $"POST /ToDo post with data: {post} already exists";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-
-            if (deadline.CompareTo(DateTime.UtcNow) < 0)
-            {
-                const string msg = "Cannot create a ToDo with a deadline that has already passed";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-
-            if (_toDoRepository.Exists(title))
-            {
-                string msg = $"Post with title: \"{title}\" already exists";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-
-            var post = new ToDoPostModel()
-            {
-                Title = title,
-                Deadline = deadline,
-                Description = description
-            };
 
             _toDoRepository.Create(post);
-            string okMsg = $"POST /ToDo post with data: {post} was created";
-            _logger.LogInformation(okMsg);
-            return Ok(okMsg);
+            _logger.LogInformation($"POST /ToDo post with data: {post} was created");
+            return Ok(post);
         }
 
         /// <summary>
