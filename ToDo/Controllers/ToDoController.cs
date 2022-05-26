@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using ToDo.Dependencies;
 using ToDo.Models;
@@ -18,12 +19,12 @@ namespace ToDo.Controllers
         }
 
         /// <summary>
-        /// Get To Do post filtered by title.
+        /// Get ToDo by title.
         /// </summary>
-        /// <param name="title">Title of the task</param>
-        /// <returns>To Do post</returns>
+        /// <param name="title"></param>
+        /// <returns>ToDo</returns>
         [HttpGet]
-        public IActionResult Get([FromQuery] string title)
+        public IActionResult Get([FromQuery][Required(AllowEmptyStrings = false)] string title)
         {
             if (string.IsNullOrEmpty(title))
             {
@@ -37,136 +38,103 @@ namespace ToDo.Controllers
         }
 
         /// <summary>
-        /// Add a new To Do
+        /// Add a new ToDo
         /// </summary>
-        /// <param name="title">title of the task</param>
-        /// <param name="deadline">task deadline</param>
-        /// <param name="description">task description</param>
-        /// <returns>To Do item</returns>
-
-        /// <summary>
-        /// Add a new To Do
-        /// </summary>
-        /// <param name="post">post to add</param>
-        /// <returns>To Do item</returns>
+        /// <param name="todo"></param>
+        /// <returns>ToDo item</returns>
         [HttpPost]
-        public IActionResult Post([FromBody] ToDoPostModel post)
+        public IActionResult Post([FromBody][Required]ToDoPostModel todo)
         {
-            if (post.Deadline.CompareTo(DateTime.UtcNow) < 0)
+            if (todo.Deadline.CompareTo(DateTime.UtcNow) < 0)
             {
-                string msg = $"POST /ToDo post with data: {post} cannot be created because deadline has already passed";
+                string msg = $"POST /ToDo post with data: {todo} cannot be created because deadline has already passed";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-
-            if (_toDoRepository.Exists(post.Title))
+            if (_toDoRepository.Post(todo))
             {
-                string msg = $"POST /ToDo post with data: {post} already exists";
+                _logger.LogInformation($"POST /ToDo post with data: {todo} was created");
+                return Ok(todo);
+            }
+            else
+            {
+                string msg = $"POST /ToDo post with data: {todo} already exists";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-
-            _toDoRepository.Create(post);
-            _logger.LogInformation($"POST /ToDo post with data: {post} was created");
-            return Ok(post);
         }
 
         /// <summary>
-        /// Update the description of a post
+        /// Patch the description of a ToDo
         /// </summary>
-        /// <param name="title">task title</param>
-        /// <param name="newDescription">new task description</param>
+        /// <param name="todo"></param>
         /// <returns>Status code</returns>
         [HttpPatch]
-        public IActionResult Patch([FromQuery] string title, [FromQuery] string newDescription)
+        public IActionResult Patch([FromBody][Required]ToDoPatchModel todo)
         {
-            if (string.IsNullOrEmpty(title))
+            string title = todo.Title;
+            if (_toDoRepository.Patch(todo))
             {
-                const string msg = "Title must not be non-empty and non-null";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-            if (string.IsNullOrEmpty(newDescription))
-            {
-                const string msg = "Description must not be non-empty and non-null";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-            if (_toDoRepository.Exists(title))
-            {
-                string msg = $"PATCH /ToDo post with title: {title} was given a new description {newDescription}";
-                _toDoRepository.Get(title).Description = newDescription;
+                string msg = $"PATCH /ToDo post with title: {title} was given a new description {todo.Description}";
                 _logger.LogInformation(msg);
                 return Ok(msg);
             }
             else
             {
-                string msg = $"Post titled: {title} could not be updated because it does not exist";
+                string msg = $"PATCH /ToDo post with title: {title} could not be patched because it does not exist";
                 _logger.LogInformation(msg);
                 return NotFound(msg);
             }
         }
 
+        /// <summary>
+        /// Delete ToDo by title
+        /// </summary>
+        /// <param name="title"></param>
+        /// <returns>Status code</returns>
         [HttpDelete]
-        public IActionResult Delete([FromQuery] string title)
+        public IActionResult Delete([FromQuery][Required]string title)
         {
-            if (_toDoRepository.Exists(title))
+            if (_toDoRepository.Delete(title))
             {
-                string msg = $"DELETE /ToDo post with title: {title} was deleted";
-                _toDoRepository.Delete(title);
+                string msg = $"DELETE /ToDo post was deleted";
                 _logger.LogInformation(msg);
                 return Ok(msg);
             }
             else
             {
-                string msg = $"Post titled: {title} could not be deleted because it does not exist";
+                string msg = $"DELETE /ToDo post does not exist";
                 _logger.LogInformation(msg);
                 return NotFound(msg);
             }
         }
 
+        /// <summary>
+        /// Replace ToDo with an existing title
+        /// </summary>
+        /// <param name="todo"></param>
+        /// <returns>Status code</returns>
         [HttpPut]
-        public IActionResult Put([FromQuery] string title, [FromQuery] DateTime deadline, [FromQuery] String description)
+        public IActionResult Put([FromQuery][Required]ToDoPostModel todo)
         {
-            if (string.IsNullOrEmpty(title))
+            if (todo.Deadline.CompareTo(DateTime.UtcNow) < 0)
             {
-                const string msg = "Title param passed as null or as an empty string";
+                const string msg = "PUT /ToDo post could not be created because deadline already passed";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-
-            if (string.IsNullOrEmpty(description))
+            if(_toDoRepository.Put(todo))
             {
-                const string msg = "Description param passed as null or as an empty string";
+                string msg = $"PUT /ToDo post was updated with data {todo}";
+                _logger.LogInformation(msg);
+                return Ok(msg);
+            } 
+            else
+            {
+                string msg = $"PUT /ToDo post does not exist";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-
-            if (deadline.CompareTo(DateTime.UtcNow) < 0)
-            {
-                const string msg = "Cannot create a ToDo with a deadline that has already passed";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-
-            if (!_toDoRepository.Exists(title))
-            {
-                string msg = $"Post with title: \"{title}\" does not exist";
-                _logger.LogInformation(msg);
-                return BadRequest(msg);
-            }
-
-            var post = new ToDoPostModel()
-            {
-                Title = title,
-                Deadline = deadline,
-                Description = description
-            };
-
-            _toDoRepository.Update(post);
-            string okMsg = $"PUT /ToDo post with title: {title} was updated with data {post}";
-            _logger.LogInformation(okMsg);
-            return Ok(okMsg);
         }
     }
 }
