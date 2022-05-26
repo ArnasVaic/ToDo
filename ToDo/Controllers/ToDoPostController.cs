@@ -27,7 +27,7 @@ namespace ToDo2.Controllers
         public IActionResult Get([FromQuery] string title)
         {
             if (title == null) return BadRequest();
-            ToDoPostModel post = _toDoRepository.GetPost(title);
+            ToDoPostModel post = _toDoRepository.Get(title);
             _logger.LogInformation("{post}", post);
             return (post == null) ? NotFound() : Ok(post);
         }

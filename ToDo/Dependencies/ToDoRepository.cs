@@ -68,7 +68,7 @@ namespace ToDo.Dependencies
             }
             try
             {
-                if (ContainsPost(post.Title))
+                if (Exists(post.Title))
                 {
                     posts[post.Title] = post;
                 }

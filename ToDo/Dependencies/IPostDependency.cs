@@ -1,4 +1,4 @@
-﻿namespace ToDo2.Dependencies
+﻿namespace ToDo.Dependencies
 {
     public interface IPostDependency
     {

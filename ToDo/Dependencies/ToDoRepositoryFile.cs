@@ -5,27 +5,27 @@ namespace ToDo.Dependencies
     public class ToDoRepositoryFile : IToDoRepository
     {
 
-        public void AddPost(ToDoPostModel post)
+        public void Create(ToDoPostModel post)
         {
             throw new NotImplementedException();
         }
 
-        public bool ContainsPost(string title)
+        public bool Exists(string title)
         {
             throw new NotImplementedException();
         }
 
-        public void DeletePost(string title)
+        public void Delete(string title)
         {
             throw new NotImplementedException();
         }
 
-        public ToDoPostModel GetPost(string title)
+        public ToDoPostModel Get(string title)
         {
             throw new NotImplementedException();
         }
 
-        public void ReplacePost(ToDoPostModel post)
+        public void Update(ToDoPostModel post)
         {
             throw new NotImplementedException();
         }

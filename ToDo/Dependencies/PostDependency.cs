@@ -1,7 +1,9 @@
-﻿namespace ToDo2.Dependencies
+﻿using ToDo.Models;
+
+namespace ToDo.Dependencies
 {
     public class PostDependency : IPostDependency
     {
-        public Dictionary<String, ToDoPost> posts = new Dictionary<String, ToDoPost>();
+        public Dictionary<String, ToDoPostModel> posts = new Dictionary<String, ToDoPostModel>();
     }
 }
