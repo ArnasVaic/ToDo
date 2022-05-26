@@ -10,8 +10,7 @@ namespace ToDo2.Controllers
     {
         private readonly ILogger<ToDoPostController> _logger;
 
-        public readonly IToDoRepository _toDoRepository;
-
+        private readonly IToDoRepository _toDoRepository;
         public ToDoPostController(ILogger<ToDoPostController> logger, IToDoRepository toDoRepository)
         {
             _logger = logger;
@@ -19,21 +18,26 @@ namespace ToDo2.Controllers
         }
 
         /// <summary>
-        /// Get a ToDoPostModel object by title
+        /// Get To Do post filtered by title.
         /// </summary>
-        /// <param name="title"></param>
-        /// <returns>Post model</returns>
+        /// <param name="title">Title of the task</param>
+        /// <returns>To Do post</returns>
         [HttpGet]
         public IActionResult Get([FromQuery] string title)
         {
-            if (title == null) return BadRequest();
-            ToDoPostModel post = _toDoRepository.Get(title);
-            _logger.LogInformation("{post}", post);
-            return (post == null) ? NotFound() : Ok(post);
+            if (string.IsNullOrEmpty(title))
+            {
+                _logger.LogInformation("title must be non-null and non-empty");
+                return BadRequest();
+            } 
+            var post = _toDoRepository.Get(title);
+            if (post == null) return NotFound();
+            _logger.LogInformation($"GET /ToDo post with data: {post} was found");
+            return Ok(post);
         }
 
         /// <summary>
-        /// Add a ToDoPostModel to database
+        /// Add a To Do Post to database
         /// </summary>
         /// <param name="title"></param>
         /// <param name="deadline"></param>
@@ -64,7 +68,7 @@ namespace ToDo2.Controllers
 
             if (_toDoRepository.Exists(title))
             {
-                _logger.LogInformation("Post with title: \"{0}\" already exists", title);
+                _logger.LogInformation($"Post with title: \"{title}\" already exists");
                 return BadRequest();
             }
 
@@ -74,8 +78,8 @@ namespace ToDo2.Controllers
                 Deadline = deadline,
                 Description = description
             };
-            //_logger.LogInformation("{post}", post);
             _toDoRepository.Create(post);
+            _logger.LogInformation($"POST /ToDo post with data: {post} was created");
             return Ok();
         }
 
@@ -101,12 +105,12 @@ namespace ToDo2.Controllers
             if (_toDoRepository.Exists(title))
             {
                 _toDoRepository.Get(title).Description = newDescription;
-                _logger.LogInformation("Post titled: {0} updated with new description: {1}", title, newDescription);
+                _logger.LogInformation($"PATCH /ToDo post with title: {title} was given a new description {newDescription}");
                 return Ok();
             }
             else
             {
-                _logger.LogInformation("Post titled: {0} could not be updated because it does not exist", title);
+                _logger.LogInformation($"Post titled: {title} could not be updated because it does not exist");
                 return NotFound();
             }
         }
@@ -117,12 +121,12 @@ namespace ToDo2.Controllers
             if (_toDoRepository.Exists(title))
             {
                 _toDoRepository.Delete(title);
-                _logger.LogInformation($"Post titled: \"{title}\" has been deleted");
+                _logger.LogInformation($"DELETE /ToDo post with title: {title} was deleted");
                 return Ok();
             }
             else
             {
-                _logger.LogInformation("Post titled: {0} could not be deleted because it does not exist", title);
+                _logger.LogInformation($"Post titled: {title} could not be deleted because it does not exist");
                 return NotFound();
             }
         }
@@ -141,7 +145,7 @@ namespace ToDo2.Controllers
                 _logger.LogInformation("Description parameter pass as null");
                 return BadRequest("null or empty description");
             }
-            ///TODO deadline null check
+
             if (deadline.CompareTo(DateTime.UtcNow) < 0)
             {
                 _logger.LogInformation("Cannot create a ToDo post with a deadline that has already passed");
@@ -150,7 +154,7 @@ namespace ToDo2.Controllers
 
             if (!_toDoRepository.Exists(title))
             {
-                _logger.LogInformation("Post with title: \"{0}\" does not exist", title);
+                _logger.LogInformation($"Post with title: \"{title}\" does not exist");
                 return BadRequest();
             }
 
@@ -161,6 +165,7 @@ namespace ToDo2.Controllers
                 Description = description
             };
             _toDoRepository.Update(post);
+            _logger.LogInformation($"PUT /ToDo post with title: {title} was updated with data {post}");
             return Ok();
         }
     }
