@@ -5,35 +5,37 @@ namespace ToDo.Dependencies
     public interface IToDoRepository
     {
         /// <summary>
-        /// Adds a ToDoPostModel to this repository
+        /// Post a new ToDo
         /// </summary>
-        /// <param name="post"></param>
-        public void Create(ToDoPostModel post);
+        /// <param name="todo"></param>
+        /// <returns> true </returns>
+        public bool Post(ToDoPostModel todo);
 
         /// <summary>
-        /// Finds post by title
+        /// Retrieve a ToDo by title
         /// </summary>
         /// <param name="title"></param>
         /// <returns>post with matching title, if there exists no such post returns null</returns>
-        public ToDoPostModel Get(string title);
+        public ToDoGetModel? Get(string title);
 
         /// <summary>
-        /// Check whether a post with a certain title exists
+        /// Remove a ToDo by title
         /// </summary>
         /// <param name="title"></param>
+        public bool Delete(string title);
+
+        /// <summary>
+        /// Replace existing ToDo
+        /// </summary>
+        /// <param name="todo"></param>
         /// <returns></returns>
-        public bool Exists(string title);
+        public bool Put(ToDoPostModel todo);
 
         /// <summary>
-        /// Remove a post by title
+        /// Update description of an existing ToDo
         /// </summary>
-        /// <param name="title"></param>
-        public void Delete(string title);
-
-        /// <summary>
-        /// Replace an existing post with matching title
-        /// </summary>
-        /// <param name="post"></param>
-        public void Update(ToDoPostModel post);
+        /// <param name="todo"></param>
+        /// <returns></returns>
+        public bool Patch(ToDoPatchModel todo);
     }
 }

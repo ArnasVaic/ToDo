@@ -1,4 +1,7 @@
-﻿using ToDo.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using ToDo.Models;
+
+#pragma warning disable CS0168
 
 namespace ToDo.Dependencies
 {
@@ -10,72 +13,65 @@ namespace ToDo.Dependencies
             _logger = logger;
         }
 
-        private readonly Dictionary<String, ToDoPostModel> posts = new Dictionary<String, ToDoPostModel>();
+        // store ToDoGetModel type because it contains the most information?
+        private readonly Dictionary<String, ToDoGetModel> _toDoDictionary = new Dictionary<String, ToDoGetModel>();
 
-        public void Create(ToDoPostModel post)
+        public bool Post([Required]ToDoPostModel todo)
         {
             try
             {
-                posts.Add(post.Title, post);
-            }
-            catch (Exception e) when (e is ArgumentNullException || e is ArgumentException)
-            {
-                _logger.Log(LogLevel.Information, e.Message);
-            }
-        }
-        public ToDoPostModel Get(string title)
-        {
-            try 
-            {
-                return posts[title];
-            } catch (Exception e) when (e is ArgumentNullException || e is KeyNotFoundException)
-            {
-                _logger.Log(LogLevel.Information, e.Message);
-                return null; 
+                _toDoDictionary.Add(todo.Title, new ToDoGetModel
+                {
+                    Title = todo.Title,
+                    Deadline = todo.Deadline,
+                    Description = todo.Description,
+                    Id = 0 // TODO: figure out how to generate ids
+                });
+                return true;
+            } catch(ArgumentException e) {
+                // key already exists
+                return false;
             }
         }
 
-        public bool Exists(string title)
+        public ToDoGetModel? Get([Required(AllowEmptyStrings = false)]string title)
+        {
+            return _toDoDictionary.ContainsKey(title) ? _toDoDictionary[title] : null;
+        }
+
+        public bool Delete([Required(AllowEmptyStrings = false)] string title)
+        {
+            return _toDoDictionary.Remove(title);
+        }
+
+        public bool Put([Required]ToDoPostModel todo)
         {
             try
             {
-                return posts.ContainsKey(title);
+                _toDoDictionary[todo.Title] = new ToDoGetModel
+                {
+                    Title = todo.Title,
+                    Deadline = todo.Deadline,
+                    Description = todo.Description
+                };
+                return true;
             }
-            catch(ArgumentNullException e)
+            catch(KeyNotFoundException e)
             {
                 return false;
             }
         }
 
-        public void Delete(string title)
+        public bool Patch([Required] ToDoPatchModel todo)
         {
             try
             {
-                posts.Remove(title);
+                _toDoDictionary[todo.Title].Description = todo.Description;
+                return true;
             }
-            catch(ArgumentNullException e)
+            catch (KeyNotFoundException e)
             {
-                _logger.Log(LogLevel.Information, e.Message);
-            }
-        }
-
-        public void Update(ToDoPostModel post)
-        {
-            if(post == null)
-            {
-                _logger.LogInformation("post parameter passed as null");
-                return;
-            }
-            try
-            {
-                if (Exists(post.Title))
-                {
-                    posts[post.Title] = post;
-                }
-            }
-            catch (Exception e) when (e is ArgumentNullException || e is KeyNotFoundException)
-            {
-                _logger.Log(LogLevel.Information, e.Message);
+                return false;
             }
         }
     }
