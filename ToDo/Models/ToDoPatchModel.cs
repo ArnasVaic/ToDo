@@ -1,22 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 #pragma warning disable CS8618 // Title, Description will never be null because they are required
 
 namespace ToDo.Models
 {
-    public class ToDoGetModel
+    public class ToDoPatchModel
     {
         [Required(AllowEmptyStrings = false)]
-        public string Title { get; set; }
+        public string Title { get; }
 
         [Required(AllowEmptyStrings = false)]
-        public string Description { get; set; }
-
-        [Required()]
-        public DateTime Deadline { get; set; }
-
-        [Required()]
-        public int Id { get; set; }
+        public string Description { get; }
     }
 }

@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
+#pragma warning disable CS8618 // Title, Description will never be null because they are required
+
 namespace ToDo.Models
 {
-    [DebuggerDisplay("Title:{Title}\nDeadline:{Deadline}\nDescription:{Description}\n")]
     public class ToDoPostModel
     {
         [Required(AllowEmptyStrings = false)]
