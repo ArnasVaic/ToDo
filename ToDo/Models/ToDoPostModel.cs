@@ -13,7 +13,10 @@ namespace ToDo.Models
         [Required(AllowEmptyStrings = false)]
         public string Description { get; set; }
 
-        [Required()]
+        [Required]
         public DateTime Deadline { get; set; }
+
+        [Required]
+        public int ProjectId { get; set; }
     }
 }
