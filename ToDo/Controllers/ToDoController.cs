@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using ToDo.Dependencies;
 using ToDo.Models;
@@ -11,11 +12,19 @@ namespace ToDo.Controllers
     {
         private readonly ILogger<ToDoController> _logger;
 
-        private readonly IToDoRepository _toDoRepository;
-        public ToDoController(ILogger<ToDoController> logger, IToDoRepository toDoRepository)
+        private readonly IGenericRepository<ToDoEntity> _toDoRepository;
+        private readonly IGenericRepository<ProjectEntity> _projectRepository;
+        private readonly IMapper _mapper;
+        public ToDoController(
+            ILogger<ToDoController> logger, 
+            IGenericRepository<ToDoEntity> toDoRepository,
+            IGenericRepository<ProjectEntity> projectRepository,
+            IMapper mapper)
         {
             _logger = logger;
             _toDoRepository = toDoRepository;
+            _projectRepository = projectRepository;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -31,8 +40,12 @@ namespace ToDo.Controllers
                 _logger.LogInformation("title must be non-null and non-empty");
                 return BadRequest();
             } 
-            var post = _toDoRepository.Get(title);
-            if (post == null) return NotFound();
+            var posts = _toDoRepository.Find(ent => ent.Title == title);
+
+            if(!posts.Any()) return NotFound($"GET /ToDo post titled: {title} has not been found");
+
+            var post = posts.First();
+
             _logger.LogInformation($"GET /ToDo post with data: {post} was found");
             return Ok(post);
         }
@@ -51,17 +64,24 @@ namespace ToDo.Controllers
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-            if (_toDoRepository.Post(todo))
-            {
-                _logger.LogInformation($"POST /ToDo post with data: {todo} was created");
-                return Ok(todo);
-            }
-            else
+
+            if (_toDoRepository.Find(_ => _.Title == todo.Title).Any())
             {
                 string msg = $"POST /ToDo post with data: {todo} already exists";
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
+
+            var project = _projectRepository.GetById(todo.ProjectId);
+            if (project == null)
+            {
+                string msg = $"Project with id:{todo.ProjectId} does not exist";
+                _logger.LogInformation(msg);
+                return BadRequest(msg);
+            }
+            _toDoRepository.Add(_mapper.Map<ToDoEntity>(todo));
+            _logger.LogInformation($"POST /ToDo post with data: {todo} was created");
+            return Ok(_mapper.Map<ToDoViewModel>(todo));
         }
 
         /// <summary>
@@ -70,20 +90,23 @@ namespace ToDo.Controllers
         /// <param name="todo"></param>
         /// <returns>Status code</returns>
         [HttpPatch]
-        public IActionResult Patch([FromBody][Required]ToDoPatchModel todo)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Patch([FromBody][Required]ToDoPatchModel patch)
         {
-            string title = todo.Title;
-            if (_toDoRepository.Patch(todo))
-            {
-                string msg = $"PATCH /ToDo post with title: {title} was given a new description {todo.Description}";
-                _logger.LogInformation(msg);
-                return Ok(msg);
-            }
-            else
+            string title = patch.Title;
+            var posts = _toDoRepository.Find(_ => _.Title == patch.Title);
+            var ent = posts.First();
+            if (ent == null)
             {
                 string msg = $"PATCH /ToDo post with title: {title} could not be patched because it does not exist";
                 _logger.LogInformation(msg);
                 return NotFound(msg);
+            }
+            else
+            {
+                ent.Update(patch);
+                _logger.LogInformation($"PATCH /ToDo post with title: {title} was given a new description {patch.Description}");
+                return NoContent();
             }
         }
 
@@ -95,11 +118,13 @@ namespace ToDo.Controllers
         [HttpDelete]
         public IActionResult Delete([FromQuery][Required]string title)
         {
-            if (_toDoRepository.Delete(title))
+            var todos = _toDoRepository.Find(_ => _.Title == title);
+            if (todos.Any())
             {
-                string msg = $"DELETE /ToDo post was deleted";
-                _logger.LogInformation(msg);
-                return Ok(msg);
+                var todo = todos.First();
+                _toDoRepository.Remove(todo);
+                _logger.LogInformation($"DELETE /ToDo post titled: {title} was deleted");
+                return NoContent();
             }
             else
             {
@@ -115,7 +140,7 @@ namespace ToDo.Controllers
         /// <param name="todo"></param>
         /// <returns>Status code</returns>
         [HttpPut]
-        public IActionResult Put([FromQuery][Required]ToDoPostModel todo)
+        public IActionResult Put([FromBody][Required]ToDoPostModel todo)
         {
             if (todo.Deadline.CompareTo(DateTime.UtcNow) < 0)
             {
@@ -123,17 +148,21 @@ namespace ToDo.Controllers
                 _logger.LogInformation(msg);
                 return BadRequest(msg);
             }
-            if(_toDoRepository.Put(todo))
-            {
-                string msg = $"PUT /ToDo post was updated with data {todo}";
-                _logger.LogInformation(msg);
-                return Ok(msg);
-            } 
-            else
+
+            var posts = _toDoRepository.Find(_ => _.Title == todo.Title);
+            var ent = posts.First();
+            if (ent == null)
             {
                 string msg = $"PUT /ToDo post does not exist";
                 _logger.LogInformation(msg);
-                return BadRequest(msg);
+                return NotFound();
+            }
+            else
+            {
+                ent.Replace(todo);
+                string msg = $"PUT /ToDo post was updated with data {todo}";
+                _logger.LogInformation(msg);
+                return NoContent();
             }
         }
     }
