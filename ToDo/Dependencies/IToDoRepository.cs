@@ -16,7 +16,7 @@ namespace ToDo.Dependencies
         /// </summary>
         /// <param name="title"></param>
         /// <returns>post with matching title, if there exists no such post returns null</returns>
-        public ToDoGetModel? Get(string title);
+        public ToDoEntity? Get(string title);
 
         /// <summary>
         /// Remove a ToDo by title
